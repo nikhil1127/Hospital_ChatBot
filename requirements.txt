@@ -2,9 +2,26 @@ fastapi
 uvicorn
 python-dotenv
 requests
+python-multipart
+
+# AI & LangChain
 langchain
+langchain-core
 langchain-groq
+langchain-community
+
+# Database
 psycopg2-binary
 sqlalchemy
 redis
+
+# Vector Database & RAG
 chromadb
+sentence-transformers
+
+# Document Processing (optional - for RAG)
+pypdf
+unstructured
+
+# HTTP Client
+httpx

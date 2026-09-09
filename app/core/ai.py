@@ -6,6 +6,15 @@ from typing import Optional
 
 load_dotenv()
 
+# Import RAG service if available
+try:
+    from app.core.rag_service import rag_service
+    RAG_AVAILABLE = True
+except ImportError:
+    RAG_AVAILABLE = False
+    print("⚠️ RAG service not available. Knowledge base features disabled.")
+
+
 class HospitalAIService:
     def __init__(self):
         self.api_key = os.getenv("GROQ_API_KEY")
@@ -24,6 +33,10 @@ class HospitalAIService:
             except Exception as e:
                 print(f"⚠️ Error initializing Groq: {e}")
                 self.llm = None
+
+        self.rag_enabled = RAG_AVAILABLE and rag_service.has_documents()
+        if self.rag_enabled:
+            print("📚 Knowledge Base (RAG) is ACTIVE")
 
         self.system_prompt = """You are the official AI Assistant for a Multispeciality Hospital.
 
@@ -79,7 +92,25 @@ FORMAT: Always be warm, professional, and use emojis where appropriate."""
                     "Please call emergency services (112/911) immediately or go to the nearest ER.\n\n"
                     "Do not wait for an appointment!")
 
+        # Check if RAG can help with this query
+        rag_context = ""
+        if self.rag_enabled and self._should_use_rag(user_message):
+            rag_context = rag_service.get_relevant_context(user_message)
+            if rag_context:
+                print(f"📚 RAG context found for query: {user_message[:50]}...")
+
         try:
+            # Build enhanced prompt with RAG context if available
+            if rag_context:
+                enhanced_prompt = f"""Answer the patient's question using ONLY the information provided below.
+If the answer isn't in the context, say you don't have that information.
+
+HOSPITAL INFORMATION:
+{rag_context}
+
+PATIENT QUESTION: {user_message}"""
+                messages.append(HumanMessage(content=enhanced_prompt))
+
             # Get AI response
             response = self.llm.invoke(messages)
             ai_text = response.content
@@ -93,6 +124,18 @@ FORMAT: Always be warm, professional, and use emojis where appropriate."""
         except Exception as e:
             print(f"❌ AI Error: {e}")
             return "I'm having trouble processing your request. Please try again in a moment or type 'agent' to speak with a human."
+
+    def _should_use_rag(self, message: str) -> bool:
+        """Determine if this query should search the knowledge base."""
+        rag_keywords = [
+            "hour", "timing", "open", "close", "visit", "location", "address",
+            "reach", "direction", "parking", "policy", "insurance", "cashless",
+            "payment", "billing", "facility", "room", "icu", "operation",
+            "laboratory", "pharmacy", "procedure", "surgery", "test", "package",
+            "cost", "price", "contact", "phone", "email", "profile", "about dr",
+            "about doctor", "qualification"
+        ]
+        return any(kw in message.lower() for kw in rag_keywords)
 
     async def _mock_response(self, user_message: str, db_service) -> str:
         """Fallback mock response when AI is unavailable."""
