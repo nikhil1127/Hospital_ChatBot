@@ -49,6 +49,12 @@ ADMIN_TEMPLATE = '''<!DOCTYPE html>
         .status-cancelled {{ background: #fee2e2; color: #991b1b; }}
         .phone {{ font-family: monospace; color: #2563eb; }}
         .fee {{ font-weight: 700; color: #10b981; }}
+        .actions {{ display: flex; gap: 6px; justify-content: center; }}
+        .btn-action {{ width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 0.9rem; transition: all 0.2s; cursor: pointer; border: none; }}
+        .btn-action:hover {{ transform: scale(1.1); }}
+        .btn-complete {{ background: #dbeafe; color: #2563eb; }}
+        .btn-cancel {{ background: #fef3c7; color: #f59e0b; }}
+        .btn-delete {{ background: #fee2e2; color: #dc2626; }}
         .empty-state {{ text-align: center; padding: 60px 20px; color: #6b7280; }}
         .empty-icon {{ font-size: 4em; margin-bottom: 20px; }}
         footer {{ text-align: center; padding: 20px; color: rgba(255,255,255,0.8); margin-top: 30px; }}
@@ -139,9 +145,11 @@ async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
                     <td class="fee">₹{fee}</td>
                     <td><span class="status status-{status}">{status.title()}</span></td>
                     <td>
-                        <a href="/admin/appointment/{apt.id}/status/completed" style="background: #dbeafe; color: #2563eb; padding: 5px 10px; border-radius: 5px; text-decoration: none; font-size: 0.8rem; margin-right: 5px;">✓ Complete</a>
-                        <a href="/admin/appointment/{apt.id}/status/cancelled" style="background: #fef3c7; color: #f59e0b; padding: 5px 10px; border-radius: 5px; text-decoration: none; font-size: 0.8rem; margin-right: 5px;">✕ Cancel</a>
-                        <a href="/admin/appointment/{apt.id}/delete" onclick="return confirm('Are you sure you want to delete this appointment?')" style="background: #fee2e2; color: #dc2626; padding: 5px 10px; border-radius: 5px; text-decoration: none; font-size: 0.8rem;">🗑 Delete</a>
+                        <div class="actions">
+                            <a href="/admin/appointment/{apt.id}/status/completed" class="btn-action btn-complete" title="Mark Complete">✓</a>
+                            <a href="/admin/appointment/{apt.id}/status/cancelled" class="btn-action btn-cancel" title="Cancel">✕</a>
+                            <a href="/admin/appointment/{apt.id}/delete" class="btn-action btn-delete" title="Delete" onclick="return confirm('Are you sure?')">🗑</a>
+                        </div>
                     </td>
                 </tr>
                 """
