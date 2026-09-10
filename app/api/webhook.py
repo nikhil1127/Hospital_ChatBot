@@ -5,6 +5,7 @@ from app.core.ai import ai_service
 from app.core.session import session_manager
 from app.core.db_service import HospitalDBService
 from app.db.session import get_db
+from app.db.models import Doctor
 import json
 
 router = APIRouter(prefix="/whatsapp", tags=["whatsapp"])

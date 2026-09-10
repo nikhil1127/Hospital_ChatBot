@@ -29,5 +29,21 @@ class Appointment(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     doctor_id = Column(Integer, ForeignKey("doctors.id"), nullable=False)
     appointment_date = Column(DateTime(timezone=True), nullable=False)
-    status = Column(String, default="pending") # pending, confirmed, cancelled, completed
+    status = Column(String, default="pending") # pending, confirmed, cancelled, completed, deleted
+    is_deleted = Column(Boolean, default=False) # soft delete flag
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class AppointmentHistory(Base):
+    """Archive table for completed/cancelled appointments"""
+    __tablename__ = "appointment_history"
+
+    id = Column(Integer, primary_key=True, index=True)
+    original_appointment_id = Column(Integer, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    doctor_id = Column(Integer, ForeignKey("doctors.id"), nullable=False)
+    appointment_date = Column(DateTime(timezone=True), nullable=False)
+    final_status = Column(String, nullable=False) # completed or cancelled
+    completed_at = Column(DateTime(timezone=True), server_default=func.now())
+    notes = Column(String, nullable=True)
