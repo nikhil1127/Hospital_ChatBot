@@ -1,0 +1,395 @@
+{
+  "test_suite": "WhatsApp Booking Flow Tests",
+  "version": "1.0",
+  "base_url": "http://localhost:8000",
+  "test_cases": [
+    {
+      "id": "TC001",
+      "name": "Complete Booking Flow - ENT",
+      "description": "Patient books an ENT appointment using the full flow",
+      "phone": "whatsapp:+911234567890",
+      "steps": [
+        {
+          "step": 1,
+          "input": "Hi",
+          "expected_state": "START",
+          "expected_keywords": ["Welcome", "Book an Appointment", "Hospital Information"],
+          "description": "Greeting shows main menu"
+        },
+        {
+          "step": 2,
+          "input": "1",
+          "expected_state": "SELECT_SPECIALTY",
+          "expected_keywords": ["Specialties", "ENT", "Cardiology", "Pediatrics"],
+          "description": "Select 'Book Appointment' shows specialties"
+        },
+        {
+          "step": 3,
+          "input": "ENT",
+          "expected_state": "SELECT_DOCTOR",
+          "expected_keywords": ["ENT doctors", "Dr.", "Fee"],
+          "description": "Select ENT specialty shows available doctors"
+        },
+        {
+          "step": 4,
+          "input": "1",
+          "expected_state": "SELECT_DATE",
+          "expected_keywords": ["date", "time", "selected"],
+          "description": "Select doctor asks for date/time"
+        },
+        {
+          "step": 5,
+          "input": "Tomorrow 2pm",
+          "expected_state": "CONFIRM",
+          "expected_keywords": ["confirm", "Doctor:", "Date/Time:", "Fee:"],
+          "description": "Enter date shows confirmation summary"
+        },
+        {
+          "step": 6,
+          "input": "CONFIRM",
+          "expected_state": "START",
+          "expected_keywords": ["confirmed", "Appointment ID", "Please arrive"],
+          "description": "Confirm creates appointment and returns to menu"
+        }
+      ],
+      "expected_result": "Appointment created successfully"
+    },
+    {
+      "id": "TC002",
+      "name": "Complete Booking Flow - Cardiology by Number",
+      "description": "Patient books Cardiology using specialty number",
+      "phone": "whatsapp:+911234567891",
+      "steps": [
+        {
+          "step": 1,
+          "input": "Book",
+          "expected_state": "SELECT_SPECIALTY",
+          "expected_keywords": ["Specialties", "1.", "2.", "3."],
+          "description": "Type 'Book' shows specialties list"
+        },
+        {
+          "step": 2,
+          "input": "2",
+          "expected_state": "SELECT_DOCTOR",
+          "expected_keywords": ["Cardiology", "Dr."],
+          "description": "Select specialty by number shows doctors"
+        },
+        {
+          "step": 3,
+          "input": "Dr. Michael Chen",
+          "expected_state": "SELECT_DATE",
+          "expected_keywords": ["selected", "date", "time"],
+          "description": "Select doctor by name asks for date"
+        },
+        {
+          "step": 4,
+          "input": "2026-09-15 14:00",
+          "expected_state": "CONFIRM",
+          "expected_keywords": ["confirm", "Dr. Michael Chen"],
+          "description": "Enter specific date shows confirmation"
+        },
+        {
+          "step": 5,
+          "input": "CONFIRM",
+          "expected_state": "START",
+          "expected_keywords": ["confirmed"],
+          "description": "Booking confirmed"
+        }
+      ],
+      "expected_result": "Cardiology appointment created"
+    },
+    {
+      "id": "TC003",
+      "name": "Direct Specialty Input",
+      "description": "Patient types specialty directly without selecting 'Book' first",
+      "phone": "whatsapp:+911234567892",
+      "steps": [
+        {
+          "step": 1,
+          "input": "Hi",
+          "expected_state": "START",
+          "expected_keywords": ["Welcome"],
+          "description": "Greeting shows menu"
+        },
+        {
+          "step": 2,
+          "input": "Pediatrics",
+          "expected_state": "SELECT_DOCTOR",
+          "expected_keywords": ["Pediatrics doctors"],
+          "description": "Direct specialty input shows doctors"
+        }
+      ],
+      "expected_result": "Direct specialty detection works"
+    },
+    {
+      "id": "TC004",
+      "name": "Reset During Booking",
+      "description": "Patient starts booking then resets",
+      "phone": "whatsapp:+911234567893",
+      "steps": [
+        {
+          "step": 1,
+          "input": "1",
+          "expected_state": "SELECT_SPECIALTY",
+          "expected_keywords": ["Specialties"],
+          "description": "Start booking"
+        },
+        {
+          "step": 2,
+          "input": "ENT",
+          "expected_state": "SELECT_DOCTOR",
+          "expected_keywords": ["ENT doctors"],
+          "description": "Select specialty"
+        },
+        {
+          "step": 3,
+          "input": "reset",
+          "expected_state": "START",
+          "expected_keywords": ["Welcome", "menu"],
+          "description": "Reset returns to main menu"
+        },
+        {
+          "step": 4,
+          "input": "menu",
+          "expected_state": "START",
+          "expected_keywords": ["Book an Appointment"],
+          "description": "Menu command also shows main menu"
+        }
+      ],
+      "expected_result": "Reset clears context and returns to menu"
+    },
+    {
+      "id": "TC005",
+      "name": "Cancel at Confirmation",
+      "description": "Patient reaches confirmation but decides to cancel",
+      "phone": "whatsapp:+911234567894",
+      "steps": [
+        {
+          "step": 1,
+          "input": "1",
+          "expected_state": "SELECT_SPECIALTY",
+          "expected_keywords": ["Specialties"],
+          "description": "Start booking"
+        },
+        {
+          "step": 2,
+          "input": "ENT",
+          "expected_state": "SELECT_DOCTOR",
+          "expected_keywords": ["doctors"],
+          "description": "Select specialty"
+        },
+        {
+          "step": 3,
+          "input": "1",
+          "expected_state": "SELECT_DATE",
+          "expected_keywords": ["date", "time"],
+          "description": "Select doctor"
+        },
+        {
+          "step": 4,
+          "input": "Tomorrow 10am",
+          "expected_state": "CONFIRM",
+          "expected_keywords": ["confirm", "CONFIRM", "CHANGE"],
+          "description": "Enter date/time"
+        },
+        {
+          "step": 5,
+          "input": "no",
+          "expected_state": "START",
+          "expected_keywords": ["cancelled"],
+          "description": "Cancel booking"
+        }
+      ],
+      "expected_result": "Booking cancelled, no appointment created"
+    },
+    {
+      "id": "TC006",
+      "name": "Invalid Doctor Selection",
+      "description": "Patient enters invalid doctor number",
+      "phone": "whatsapp:+911234567895",
+      "steps": [
+        {
+          "step": 1,
+          "input": "1",
+          "expected_state": "SELECT_SPECIALTY",
+          "expected_keywords": ["Specialties"],
+          "description": "Start booking"
+        },
+        {
+          "step": 2,
+          "input": "ENT",
+          "expected_state": "SELECT_DOCTOR",
+          "expected_keywords": ["doctors"],
+          "description": "Select specialty"
+        },
+        {
+          "step": 3,
+          "input": "99",
+          "expected_state": "SELECT_DOCTOR",
+          "expected_keywords": ["not found", "invalid", "number"],
+          "description": "Invalid doctor number shows error"
+        },
+        {
+          "step": 4,
+          "input": "1",
+          "expected_state": "SELECT_DATE",
+          "expected_keywords": ["date"],
+          "description": "Correct selection proceeds"
+        }
+      ],
+      "expected_result": "Error handled gracefully, can retry"
+    },
+    {
+      "id": "TC007",
+      "name": "Menu Navigation",
+      "description": "Patient navigates through different menu options",
+      "phone": "whatsapp:+911234567896",
+      "steps": [
+        {
+          "step": 1,
+          "input": "Hi",
+          "expected_state": "START",
+          "expected_keywords": ["Welcome"],
+          "description": "Greeting"
+        },
+        {
+          "step": 2,
+          "input": "3",
+          "expected_state": "START",
+          "expected_keywords": ["Hospital", "Address", "Phone"],
+          "description": "Hospital Information"
+        },
+        {
+          "step": 3,
+          "input": "menu",
+          "expected_state": "START",
+          "expected_keywords": ["Welcome", "Book an Appointment"],
+          "description": "Menu command"
+        },
+        {
+          "step": 4,
+          "input": "2",
+          "expected_state": "START",
+          "expected_keywords": ["Doctors"],
+          "description": "View Doctors"
+        },
+        {
+          "step": 5,
+          "input": "4",
+          "expected_state": "START",
+          "expected_keywords": ["Emergency", "108"],
+          "description": "Emergency Info"
+        }
+      ],
+      "expected_result": "Navigation works correctly"
+    },
+    {
+      "id": "TC008",
+      "name": "Greeting Variations",
+      "description": "Test different greeting inputs",
+      "phone": "whatsapp:+911234567897",
+      "inputs": ["Hello", "Hey", "Good morning", "Good afternoon", "Namaste"],
+      "expected_state": "START",
+      "expected_keywords": ["Welcome"],
+      "expected_result": "All greetings show main menu"
+    },
+    {
+      "id": "TC009",
+      "name": "Start Over Command",
+      "description": "Patient uses 'start over' to reset",
+      "phone": "whatsapp:+911234567898",
+      "steps": [
+        {
+          "step": 1,
+          "input": "1",
+          "expected_state": "SELECT_SPECIALTY",
+          "description": "Start booking"
+        },
+        {
+          "step": 2,
+          "input": "start over",
+          "expected_state": "START",
+          "expected_keywords": ["Welcome"],
+          "description": "Start over resets to menu"
+        }
+      ],
+      "expected_result": "Start over works like reset"
+    },
+    {
+      "id": "TC010",
+      "name": "Help Command",
+      "description": "Patient types 'help' for assistance",
+      "phone": "whatsapp:+911234567899",
+      "steps": [
+        {
+          "step": 1,
+          "input": "help",
+          "expected_state": "START",
+          "expected_keywords": ["Welcome", "Book an Appointment"],
+          "description": "Help shows menu"
+        },
+        {
+          "step": 2,
+          "input": "options",
+          "expected_state": "START",
+          "expected_keywords": ["Welcome", "Book an Appointment"],
+          "description": "Options shows menu"
+        }
+      ],
+      "expected_result": "Help and options show main menu"
+    }
+  ],
+  "sample_doctors": [
+    {
+      "name": "Dr. Sarah Johnson",
+      "specialty": "ENT",
+      "experience_years": 10,
+      "consultation_fee": 500,
+      "availability_slots": "9-12,14-17"
+    },
+    {
+      "name": "Dr. Raj Patel",
+      "specialty": "ENT",
+      "experience_years": 8,
+      "consultation_fee": 450,
+      "availability_slots": "10-13,16-19"
+    },
+    {
+      "name": "Dr. Michael Chen",
+      "specialty": "Cardiology",
+      "experience_years": 15,
+      "consultation_fee": 800,
+      "availability_slots": "9-12,15-18"
+    },
+    {
+      "name": "Dr. Emily Davis",
+      "specialty": "Pediatrics",
+      "experience_years": 12,
+      "consultation_fee": 600,
+      "availability_slots": "9-17"
+    },
+    {
+      "name": "Dr. James Wilson",
+      "specialty": "Neurology",
+      "experience_years": 20,
+      "consultation_fee": 1000,
+      "availability_slots": "10-14"
+    },
+    {
+      "name": "Dr. Lisa Kumar",
+      "specialty": "Dermatology",
+      "experience_years": 9,
+      "consultation_fee": 550,
+      "availability_slots": "11-15"
+    }
+  ],
+  "api_endpoints": {
+    "webhook": "POST /whatsapp/",
+    "admin_dashboard": "GET /admin",
+    "add_doctor": "POST /admin/add-doctor",
+    "list_appointments": "GET /admin",
+    "complete_appointment": "GET /admin/appointment/{id}/complete",
+    "cancel_appointment": "GET /admin/appointment/{id}/cancel",
+    "soft_delete_appointment": "GET /admin/appointment/{id}/soft-delete"
+  }
+}
