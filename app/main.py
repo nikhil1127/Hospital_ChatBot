@@ -10,7 +10,7 @@ from app.db.models import Appointment, User, Doctor
 app = FastAPI(title="Multispeciality Hospital Bot")
 
 # Templates
- templates = Jinja2Templates(directory="app/templates")
+templates = Jinja2Templates(directory="app/templates")
 
 # Include the webhook routes
 app.include_router(webhook_router)
