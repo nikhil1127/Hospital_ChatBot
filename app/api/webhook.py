@@ -21,7 +21,7 @@ async def whatsapp_webhook(
     Main WhatsApp webhook endpoint.
     Handles conversation state, AI responses, and appointment booking.
     """
-    print(f"📱 Incoming message from {From}: {Body}")
+    print(f"[WEBHOOK] Incoming message from {From}: {Body}")
 
     try:
         # Initialize services
@@ -61,7 +61,7 @@ async def whatsapp_webhook(
 
         return Response(content=twiml_response, media_type="application/xml")
     except Exception as e:
-        print(f"❌ Webhook error: {e}")
+        print(f"[ERROR] Webhook error: {e}")
         import traceback
         traceback.print_exc()
         error_response = """<?xml version="1.0" encoding="UTF-8"?>

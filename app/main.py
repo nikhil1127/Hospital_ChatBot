@@ -15,7 +15,7 @@ async def startup_event():
     create_tables()
     print("✅ Database tables created/verified")
 
-# Include the webhook routes
+# Include the webhook routes (both /whatsapp and /whatsapp/)
 app.include_router(webhook_router)
 
 @app.get("/")
