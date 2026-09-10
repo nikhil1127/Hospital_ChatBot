@@ -129,6 +129,7 @@ async def handle_conversation_flow(message: str, ai_response: str, session: dict
     if any(word in message_lower for word in ["reset", "start over"]):
         session["state"] = "START"
         session["context"] = {}
+        session_manager.update_session(phone, session)
         return get_main_menu_twiml()
 
     # Handle menu command
@@ -157,7 +158,7 @@ Our staff will assist you shortly!</Message>
         if any(word in message_lower for word in ["1", "book", "appointment", "doctor", "schedule"]):
             specialties = db_service.list_all_specialties()
             session["state"] = "SELECT_SPECIALTY"
-            session_manager.update_session(From, session)
+            session_manager.update_session(phone, session)
             return get_specialties_list_twiml(specialties)
 
         # Menu option 2: View Doctors
@@ -247,7 +248,7 @@ _Type "menu" to see all options_</Message>
                         context["doctors"] = [{"id": d.id, "name": d.name, "fee": d.consultation_fee} for d in doctors]
                         session["context"] = context
                         session["state"] = "SELECT_DOCTOR"
-                        session_manager.update_session(From, session)
+                        session_manager.update_session(phone, session)
 
                         doctor_list = "\n".join([f"{i+1}. {d.name} (Fee: ₹{d.consultation_fee})" for i, d in enumerate(doctors)])
                         return f"""<?xml version="1.0" encoding="UTF-8"?>
@@ -293,7 +294,7 @@ _Please reply with the doctor's number (1, 2, etc.)_</Message>
                 context["doctors"] = [{"id": d.id, "name": d.name, "fee": d.consultation_fee} for d in doctors]
                 session["context"] = context
                 session["state"] = "SELECT_DOCTOR"
-                session_manager.update_session(From, session)
+                session_manager.update_session(phone, session)
 
                 doctor_list = "\n".join([f"{i+1}. {d.name} (Fee: ₹{d.consultation_fee})" for i, d in enumerate(doctors)])
                 return f"""<?xml version="1.0" encoding="UTF-8"?>
@@ -329,7 +330,7 @@ _Please reply with the doctor's number (1, 2, etc.)_</Message>
             context["fee"] = selected_doctor["fee"]
             session["context"] = context
             session["state"] = "SELECT_DATE"
-            session_manager.update_session(From, session)
+            session_manager.update_session(phone, session)
             return f"""<?xml version="1.0" encoding="UTF-8"?>
     <Response>
         <Message>📅 You selected **{selected_doctor['name']}**.
@@ -347,7 +348,7 @@ Please provide your preferred date and time (e.g., 'Tomorrow at 2 PM' or '2026-0
         context["appointment_time"] = message
         session["context"] = context
         session["state"] = "CONFIRM"
-        session_manager.update_session(From, session)
+        session_manager.update_session(phone, session)
 
         return f"""<?xml version="1.0" encoding="UTF-8"?>
     <Response>
@@ -385,7 +386,7 @@ Reply **CONFIRM** to book or **CHANGE** to modify.</Message>
 
                 session["state"] = "START"
                 session["context"] = {}
-                session_manager.update_session(From, session)
+                session_manager.update_session(phone, session)
 
                 return f"""<?xml version="1.0" encoding="UTF-8"?>
     <Response>
@@ -407,7 +408,7 @@ Please arrive 15 minutes early. Type 'book' for another appointment.</Message>
         else:
             session["state"] = "START"
             session["context"] = {}
-            session_manager.update_session(From, session)
+            session_manager.update_session(phone, session)
             return """<?xml version="1.0" encoding="UTF-8"?>
     <Response>
         <Message>🔄 Booking cancelled. How else can I help you?</Message>
