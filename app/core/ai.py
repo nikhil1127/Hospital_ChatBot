@@ -12,14 +12,14 @@ try:
     RAG_AVAILABLE = True
 except ImportError:
     RAG_AVAILABLE = False
-    print("⚠️ RAG service not available. Knowledge base features disabled.")
+    print("[WARNING] RAG service not available. Knowledge base features disabled.")
 
 
 class HospitalAIService:
     def __init__(self):
         self.api_key = os.getenv("GROQ_API_KEY")
         if not self.api_key:
-            print("⚠️ WARNING: GROQ_API_KEY not found. Running in MOCK mode.")
+            print("[WARNING] WARNING: GROQ_API_KEY not found. Running in MOCK mode.")
             self.llm = None
         else:
             try:
@@ -29,14 +29,14 @@ class HospitalAIService:
                     groq_api_key=self.api_key,
                     max_tokens=1024
                 )
-                print("✅ AI Service initialized with Groq")
+                print("[OK] AI Service initialized with Groq")
             except Exception as e:
-                print(f"⚠️ Error initializing Groq: {e}")
+                print(f"[WARNING] Error initializing Groq: {e}")
                 self.llm = None
 
         self.rag_enabled = RAG_AVAILABLE and rag_service.has_documents()
         if self.rag_enabled:
-            print("📚 Knowledge Base (RAG) is ACTIVE")
+            print("[KB] Knowledge Base (RAG) is ACTIVE")
 
         self.system_prompt = """You are the official AI Assistant for a Multispeciality Hospital.
 
@@ -97,7 +97,7 @@ FORMAT: Always be warm, professional, and use emojis where appropriate."""
         if self.rag_enabled and self._should_use_rag(user_message):
             rag_context = rag_service.get_relevant_context(user_message)
             if rag_context:
-                print(f"📚 RAG context found for query: {user_message[:50]}...")
+                print(f"[KB] RAG context found for query: {user_message[:50]}...")
 
         try:
             # Build enhanced prompt with RAG context if available
@@ -122,7 +122,7 @@ PATIENT QUESTION: {user_message}"""
             return ai_text
 
         except Exception as e:
-            print(f"❌ AI Error: {e}")
+            print(f"[ERROR] AI Error: {e}")
             return "I'm having trouble processing your request. Please try again in a moment or type 'agent' to speak with a human."
 
     def _should_use_rag(self, message: str) -> bool:

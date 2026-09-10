@@ -26,7 +26,7 @@ try:
     RAG_AVAILABLE = True
 except ImportError:
     RAG_AVAILABLE = False
-    print("⚠️ RAG dependencies not fully installed. Run: pip install langchain-community pypdf")
+    print("[WARNING] RAG dependencies not fully installed. Run: pip install langchain-community pypdf")
 
 
 class HospitalRAGService:
@@ -51,9 +51,9 @@ class HospitalRAGService:
             embedding_function=self.embedding_func
         )
 
-        print(f"📚 RAG Service initialized")
-        print(f"   📁 Documents folder: {self.data_dir.absolute()}")
-        print(f"   📊 Indexed documents: {self.collection.count()}")
+        print(f"[RAG] RAG Service initialized")
+        print(f"   [FOLDER] Documents folder: {self.data_dir.absolute()}")
+        print(f"   [STATS] Indexed documents: {self.collection.count()}")
 
     def index_documents(self) -> int:
         """
@@ -61,7 +61,7 @@ class HospitalRAGService:
         Returns number of chunks indexed.
         """
         if not RAG_AVAILABLE:
-            print("❌ RAG dependencies not available. Install: pip install langchain-community pypdf")
+            print("[ERROR] RAG dependencies not available. Install: pip install langchain-community pypdf")
             return 0
 
         # Supported file types
@@ -73,11 +73,11 @@ class HospitalRAGService:
         md_files = list(self.data_dir.glob("*.md"))
 
         if not (pdf_files or txt_files or md_files):
-            print("⚠️ No documents found in data/documents/")
+            print("[WARNING] No documents found in data/documents/")
             print("   Add PDFs, TXT, or MD files and run again.")
             return 0
 
-        print(f"📄 Found {len(pdf_files)} PDFs, {len(txt_files)} TXTs, {len(md_files)} MDs")
+        print(f"[FILE] Found {len(pdf_files)} PDFs, {len(txt_files)} TXTs, {len(md_files)} MDs")
 
         # Process PDFs
         for pdf_path in pdf_files:
@@ -88,9 +88,9 @@ class HospitalRAGService:
                     doc.metadata["source"] = pdf_path.name
                     doc.metadata["type"] = "pdf"
                 documents.extend(docs)
-                print(f"   ✅ Loaded: {pdf_path.name}")
+                print(f"   [OK] Loaded: {pdf_path.name}")
             except Exception as e:
-                print(f"   ❌ Error loading {pdf_path.name}: {e}")
+                print(f"   [ERROR] Error loading {pdf_path.name}: {e}")
 
         # Process TXT and MD files
         for text_path in list(txt_files) + list(md_files):
@@ -101,9 +101,9 @@ class HospitalRAGService:
                     doc.metadata["source"] = text_path.name
                     doc.metadata["type"] = "text"
                 documents.extend(docs)
-                print(f"   ✅ Loaded: {text_path.name}")
+                print(f"   [OK] Loaded: {text_path.name}")
             except Exception as e:
-                print(f"   ❌ Error loading {text_path.name}: {e}")
+                print(f"   [ERROR] Error loading {text_path.name}: {e}")
 
         if not documents:
             return 0
@@ -116,7 +116,7 @@ class HospitalRAGService:
         )
 
         chunks = text_splitter.split_documents(documents)
-        print(f"✂️ Split into {len(chunks)} chunks")
+        print(f"[SPLIT] Split into {len(chunks)} chunks")
 
         # Clear existing collection and add new documents
         self.collection.delete(where={})  # Clear all
@@ -136,7 +136,7 @@ class HospitalRAGService:
                 metadatas=metadatas
             )
 
-        print(f"🎉 Successfully indexed {len(chunks)} chunks from {len(documents)} pages")
+        print(f"[DONE] Successfully indexed {len(chunks)} chunks from {len(documents)} pages")
         return len(chunks)
 
     def search(self, query: str, n_results: int = 3) -> List[dict]:
@@ -195,17 +195,17 @@ def index_documents_cli():
     CLI command to index documents.
     Run this after adding PDFs to data/documents/
     """
-    print("🏥 Hospital Knowledge Base - Document Indexer")
+    print("[HOSPITAL] Hospital Knowledge Base - Document Indexer")
     print("=" * 50)
 
     rag = HospitalRAGService()
     count = rag.index_documents()
 
     if count > 0:
-        print("\n✅ Indexing complete!")
+        print("\n[OK] Indexing complete!")
         print("   Your bot can now answer questions from these documents.")
     else:
-        print("\n⚠️ No documents indexed.")
+        print("\n[WARNING] No documents indexed.")
         print("   Add PDFs/TXTs to 'data/documents/' and run again.")
 
 
