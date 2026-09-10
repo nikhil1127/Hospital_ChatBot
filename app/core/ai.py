@@ -25,7 +25,7 @@ class HospitalAIService:
             try:
                 self.llm = ChatGroq(
                     temperature=0.1,
-                    model_name="llama-3.1-70b-versatile",
+                    model_name="openai/gpt-oss-120b",
                     groq_api_key=self.api_key,
                     max_tokens=1024
                 )
