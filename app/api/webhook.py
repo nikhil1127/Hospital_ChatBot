@@ -22,42 +22,52 @@ async def whatsapp_webhook(
     """
     print(f"📱 Incoming message from {From}: {Body}")
 
-    # Initialize services
-    db_service = HospitalDBService(db)
+    try:
+        # Initialize services
+        db_service = HospitalDBService(db)
 
-    # Get or create user session
-    session = session_manager.get_session(From)
-    user = db_service.get_or_create_user(From)
+        # Get or create user session
+        session = session_manager.get_session(From)
+        user = db_service.get_or_create_user(From)
 
-    # Get AI response with full context
-    ai_response = await ai_service.get_response(
-        user_message=Body,
-        session_data=session,
-        db_service=db_service
-    )
+        # Get AI response with full context
+        ai_response = await ai_service.get_response(
+            user_message=Body,
+            session_data=session,
+            db_service=db_service
+        )
 
-    # Handle conversation states for booking flow
-    response_text = await handle_conversation_flow(
-        Body, ai_response, session, db_service, user.id
-    )
+        # Handle conversation states for booking flow
+        response_text = await handle_conversation_flow(
+            Body, ai_response, session, db_service, user.id, From
+        )
 
-    # Update session history
-    session["history"].append({"role": "user", "content": Body})
-    session["history"].append({"role": "assistant", "content": response_text[:500]})  # Limit length
-    session_manager.update_session(From, session)
+        # Update session history
+        session["history"].append({"role": "user", "content": Body})
+        session["history"].append({"role": "assistant", "content": response_text[:500]})  # Limit length
+        session_manager.update_session(From, session)
 
-    # Check if response is already TwiML (from menu functions)
-    if response_text.strip().startswith("<?xml"):
-        return Response(content=response_text, media_type="application/xml")
+        # Check if response is already TwiML (from menu functions)
+        if response_text.strip().startswith("<?xml"):
+            return Response(content=response_text, media_type="application/xml")
 
-    # Otherwise, wrap in TwiML
-    twiml_response = f"""<?xml version="1.0" encoding="UTF-8"?>
+        # Otherwise, wrap in TwiML
+        twiml_response = f"""<?xml version="1.0" encoding="UTF-8"?>
     <Response>
         <Message>{response_text}</Message>
     </Response>
     """
 
-    return Response(content=twiml_response, media_type="application/xml")
+        return Response(content=twiml_response, media_type="application/xml")
+    except Exception as e:
+        print(f"❌ Webhook error: {e}")
+        import traceback
+        traceback.print_exc()
+        error_response = """<?xml version="1.0" encoding="UTF-8"?>
+    <Response>
+        <Message>⚠️ Sorry, something went wrong. Please try again or type 'menu' to start over.</Message>
+    </Response>"""
+        return Response(content=error_response, media_type="application/xml")
 
 
 def get_main_menu_twiml():
@@ -106,7 +116,7 @@ def get_specialties_list_twiml(specialties: list) -> str:
     </Response>"""
 
 
-async def handle_conversation_flow(message: str, ai_response: str, session: dict, db_service, user_id: int):
+async def handle_conversation_flow(message: str, ai_response: str, session: dict, db_service, user_id: int, phone: str):
     """
     Manages the conversation state machine for booking appointments.
     States: START → SELECT_SPECIALTY → SELECT_DOCTOR → SELECT_DATE → CONFIRM → BOOKED
@@ -146,6 +156,8 @@ Our staff will assist you shortly!</Message>
         # Menu option 1: Book Appointment
         if any(word in message_lower for word in ["1", "book", "appointment", "doctor", "schedule"]):
             specialties = db_service.list_all_specialties()
+            session["state"] = "SELECT_SPECIALTY"
+            session_manager.update_session(From, session)
             return get_specialties_list_twiml(specialties)
 
         # Menu option 2: View Doctors
@@ -214,15 +226,43 @@ Sunday: 10 AM - 2 PM
 _Type "menu" to see all options_</Message>
     </Response>"""
 
-        # If they type a specialty directly, go to SELECT_DOCTOR state
+        # If they type a specialty directly, handle it immediately
         else:
             # Check if message matches a specialty
             specialties = db_service.list_all_specialties()
             specialty_names = [s[0].lower() for s in specialties]
 
             if message_lower in specialty_names:
-                session["state"] = "SELECT_SPECIALTY"
-                # Continue to specialty handling below
+                # Save the specialty and transition to doctor selection
+                selected_specialty = None
+                for spec in specialties:
+                    if spec[0].lower() == message_lower:
+                        selected_specialty = spec[0]
+                        break
+
+                if selected_specialty:
+                    doctors = db_service.find_doctors_by_specialty(selected_specialty)
+                    if doctors:
+                        context["specialty"] = selected_specialty
+                        context["doctors"] = [{"id": d.id, "name": d.name, "fee": d.consultation_fee} for d in doctors]
+                        session["context"] = context
+                        session["state"] = "SELECT_DOCTOR"
+                        session_manager.update_session(From, session)
+
+                        doctor_list = "\n".join([f"{i+1}. {d.name} (Fee: ₹{d.consultation_fee})" for i, d in enumerate(doctors)])
+                        return f"""<?xml version="1.0" encoding="UTF-8"?>
+    <Response>
+        <Message>👨‍⚕️ *Available {selected_specialty} doctors:*
+
+{doctor_list}
+
+_Please reply with the doctor's number (1, 2, etc.)_</Message>
+    </Response>"""
+                    else:
+                        return f"""<?xml version="1.0" encoding="UTF-8"?>
+    <Response>
+        <Message>❌ No doctors available for {selected_specialty}. Please try another specialty.</Message>
+    </Response>"""
             else:
                 # General chat response
                 return ai_response
@@ -253,6 +293,7 @@ _Type "menu" to see all options_</Message>
                 context["doctors"] = [{"id": d.id, "name": d.name, "fee": d.consultation_fee} for d in doctors]
                 session["context"] = context
                 session["state"] = "SELECT_DOCTOR"
+                session_manager.update_session(From, session)
 
                 doctor_list = "\n".join([f"{i+1}. {d.name} (Fee: ₹{d.consultation_fee})" for i, d in enumerate(doctors)])
                 return f"""<?xml version="1.0" encoding="UTF-8"?>
@@ -264,9 +305,15 @@ _Type "menu" to see all options_</Message>
 _Please reply with the doctor's number (1, 2, etc.)_</Message>
     </Response>"""
             else:
-                return f"❌ No doctors available for {selected_specialty}. Please try another specialty."
+                return f"""<?xml version="1.0" encoding="UTF-8"?>
+    <Response>
+        <Message>❌ No doctors available for {selected_specialty}. Please try another specialty.</Message>
+    </Response>"""
         else:
-            return f"❌ No doctors found for '{message}'. Please check the spelling or type 'menu' to start over."
+            return f"""<?xml version="1.0" encoding="UTF-8"?>
+    <Response>
+        <Message>❌ No doctors found for '{message}'. Please check the spelling or type 'menu' to start over.</Message>
+    </Response>"""
 
     elif current_state == "SELECT_DOCTOR":
         # User selected a doctor
@@ -282,17 +329,37 @@ _Please reply with the doctor's number (1, 2, etc.)_</Message>
             context["fee"] = selected_doctor["fee"]
             session["context"] = context
             session["state"] = "SELECT_DATE"
-            return f"📅 You selected **{selected_doctor['name']}**.\n\nPlease provide your preferred date and time (e.g., 'Tomorrow at 2 PM' or '2026-09-15 14:00')."
+            session_manager.update_session(From, session)
+            return f"""<?xml version="1.0" encoding="UTF-8"?>
+    <Response>
+        <Message>📅 You selected **{selected_doctor['name']}**.
+
+Please provide your preferred date and time (e.g., 'Tomorrow at 2 PM' or '2026-09-15 14:00').</Message>
+    </Response>"""
         else:
-            return "❌ Doctor not found. Please reply with the exact name or number from the list."
+            return """<?xml version="1.0" encoding="UTF-8"?>
+    <Response>
+        <Message>❌ Doctor not found. Please reply with the exact name or number from the list.</Message>
+    </Response>"""
 
     elif current_state == "SELECT_DATE":
         # User provided date/time - show confirmation
         context["appointment_time"] = message
         session["context"] = context
         session["state"] = "CONFIRM"
+        session_manager.update_session(From, session)
 
-        return f"📝 **Please confirm your appointment:**\n\n👨‍⚕️ Doctor: {context['doctor_name']}\n🏥 Specialty: {context['specialty']}\n📅 Date/Time: {message}\n💰 Fee: ₹{context['fee']}\n\nReply **CONFIRM** to book or **CHANGE** to modify."
+        return f"""<?xml version="1.0" encoding="UTF-8"?>
+    <Response>
+        <Message>📝 **Please confirm your appointment:**
+
+👨‍⚕️ Doctor: {context['doctor_name']}
+🏥 Specialty: {context['specialty']}
+📅 Date/Time: {message}
+💰 Fee: ₹{context['fee']}
+
+Reply **CONFIRM** to book or **CHANGE** to modify.</Message>
+    </Response>"""
 
     elif current_state == "CONFIRM":
         if "confirm" in message_lower:
@@ -318,15 +385,33 @@ _Please reply with the doctor's number (1, 2, etc.)_</Message>
 
                 session["state"] = "START"
                 session["context"] = {}
+                session_manager.update_session(From, session)
 
-                return f"✅ **Appointment Confirmed!**\n\n📋 Appointment ID: #{appointment.id}\n👨‍⚕️ Dr. {context['doctor_name']}\n📅 {context['appointment_time']}\n💰 Fee: ₹{context['fee']}\n\nPlease arrive 15 minutes early. Type 'book' for another appointment."
+                return f"""<?xml version="1.0" encoding="UTF-8"?>
+    <Response>
+        <Message>✅ **Appointment Confirmed!**
+
+📋 Appointment ID: #{appointment.id}
+👨‍⚕️ Dr. {context['doctor_name']}
+📅 {context['appointment_time']}
+💰 Fee: ₹{context['fee']}
+
+Please arrive 15 minutes early. Type 'book' for another appointment.</Message>
+    </Response>"""
             except Exception as e:
                 print(f"Booking error: {e}")
-                return "❌ Sorry, there was an error booking your appointment. Please try again or type 'agent' for help."
+                return """<?xml version="1.0" encoding="UTF-8"?>
+    <Response>
+        <Message>❌ Sorry, there was an error booking your appointment. Please try again or type 'agent' for help.</Message>
+    </Response>"""
         else:
             session["state"] = "START"
             session["context"] = {}
-            return "🔄 Booking cancelled. How else can I help you?"
+            session_manager.update_session(From, session)
+            return """<?xml version="1.0" encoding="UTF-8"?>
+    <Response>
+        <Message>🔄 Booking cancelled. How else can I help you?</Message>
+    </Response>"""
 
     # Default: return AI response
     return ai_response
