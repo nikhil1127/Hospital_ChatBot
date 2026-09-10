@@ -1,7 +1,7 @@
-from fastapi import FastAPI, Request, Depends
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Request, Depends, HTTPException
+from fastapi.responses import HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 from app.api.webhook import router as webhook_router
 from app.db.session import get_db
@@ -138,6 +138,11 @@ async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
                     <td>{date_str}</td>
                     <td class="fee">₹{fee}</td>
                     <td><span class="status status-{status}">{status.title()}</span></td>
+                    <td>
+                        <a href="/admin/appointment/{apt.id}/status/completed" style="background: #dbeafe; color: #2563eb; padding: 5px 10px; border-radius: 5px; text-decoration: none; font-size: 0.8rem; margin-right: 5px;">✓ Complete</a>
+                        <a href="/admin/appointment/{apt.id}/status/cancelled" style="background: #fef3c7; color: #f59e0b; padding: 5px 10px; border-radius: 5px; text-decoration: none; font-size: 0.8rem; margin-right: 5px;">✕ Cancel</a>
+                        <a href="/admin/appointment/{apt.id}/delete" onclick="return confirm('Are you sure you want to delete this appointment?')" style="background: #fee2e2; color: #dc2626; padding: 5px 10px; border-radius: 5px; text-decoration: none; font-size: 0.8rem;">🗑 Delete</a>
+                    </td>
                 </tr>
                 """
 
@@ -153,6 +158,7 @@ async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
                         <th>Date & Time</th>
                         <th>Fee</th>
                         <th>Status</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -193,6 +199,147 @@ async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
         </body>
         </html>
         """)
+
+
+@app.get("/admin/appointment/{appointment_id}/delete")
+async def delete_appointment(appointment_id: int, db: Session = Depends(get_db)):
+    """Delete an appointment"""
+    appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
+    if not appointment:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+
+    db.delete(appointment)
+    db.commit()
+
+    return RedirectResponse(url="/admin", status_code=302)
+
+
+@app.get("/admin/appointment/{appointment_id}/status/{new_status}")
+async def update_appointment_status(
+    appointment_id: int,
+    new_status: str,
+    db: Session = Depends(get_db)
+):
+    """Update appointment status (confirmed, pending, cancelled, completed)"""
+    appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
+    if not appointment:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+
+    # Validate status
+    valid_statuses = ["confirmed", "pending", "cancelled", "completed"]
+    if new_status not in valid_statuses:
+        raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of: {valid_statuses}")
+
+    appointment.status = new_status
+    db.commit()
+
+    return RedirectResponse(url="/admin", status_code=302)
+
+
+@app.get("/admin/doctors")
+async def admin_doctors(request: Request, db: Session = Depends(get_db)):
+    """View and manage doctors"""
+    doctors = db.query(Doctor).all()
+
+    rows = ""
+    for doc in doctors:
+        rows += f"""
+        <tr>
+            <td>#{doc.id}</td>
+            <td><strong>{doc.name}</strong></td>
+            <td>{doc.specialty}</td>
+            <td>{doc.experience_years} years</td>
+            <td class='fee'>₹{doc.consultation_fee}</td>
+            <td>{doc.availability_slots}</td>
+            <td><span class='status {"status-confirmed" if doc.is_available else "status-cancelled"}'>{"Available" if doc.is_available else "Unavailable"}</span></td>
+        </tr>
+        """
+
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Manage Doctors - MedCare Hospital</title>
+        <style>
+            body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; color: #333; }}
+            .container {{ max-width: 1200px; margin: 0 auto; }}
+            header {{ background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); margin-bottom: 30px; text-align: center; }}
+            .back-link {{ display: inline-block; margin-bottom: 20px; color: white; text-decoration: none; font-size: 1.1rem; }}
+            h1 {{ color: #1f2937; font-size: 2em; margin-bottom: 5px; }}
+            table {{ width: 100%; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.1); }}
+            th {{ background: #f9fafb; padding: 15px; text-align: left; font-weight: 600; text-transform: uppercase; font-size: 0.8rem; color: #6b7280; }}
+            td {{ padding: 15px; border-bottom: 1px solid #e5e7eb; }}
+            .fee {{ font-weight: 700; color: #10b981; }}
+            .status {{ display: inline-block; padding: 5px 15px; border-radius: 20px; font-size: 0.85em; font-weight: 600; }}
+            .status-confirmed {{ background: #d1fae5; color: #065f46; }}
+            .status-cancelled {{ background: #fee2e2; color: #991b1b; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <a href="/admin" class="back-link">← Back to Dashboard</a>
+            <header>
+                <h1>👨‍⚕️ Manage Doctors</h1>
+                <p style="color: #6b7280;">{len(doctors)} doctors registered</p>
+            </header>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Specialty</th>
+                        <th>Experience</th>
+                        <th>Consultation Fee</th>
+                        <th>Availability</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {rows}
+                </tbody>
+            </table>
+        </div>
+    </body>
+    </html>
+    """
+
+    return HTMLResponse(content=html)
+
+
+@app.get("/admin/stats")
+async def admin_stats_json(db: Session = Depends(get_db)):
+    """Get dashboard statistics as JSON (for API access)"""
+    appointments = db.query(Appointment).all()
+
+    total = len(appointments)
+    confirmed = len([a for a in appointments if a.status == "confirmed"])
+    pending = len([a for a in appointments if a.status == "pending"])
+    cancelled = len([a for a in appointments if a.status == "cancelled"])
+    completed = len([a for a in appointments if a.status == "completed"])
+
+    today = datetime.now().date()
+    today_count = len([a for a in appointments if a.appointment_date and a.appointment_date.date() == today])
+
+    # This week's appointments
+    week_start = today - timedelta(days=today.weekday())
+    week_count = len([a for a in appointments if a.appointment_date and a.appointment_date.date() >= week_start])
+
+    # Total revenue
+    revenue = sum([a.consultation_fee or 0 for a in appointments if a.status == "confirmed"])
+
+    return JSONResponse(content={{
+        "total_appointments": total,
+        "confirmed": confirmed,
+        "pending": pending,
+        "cancelled": cancelled,
+        "completed": completed,
+        "today": today_count,
+        "this_week": week_count,
+        "estimated_revenue": revenue
+    }})
+
 
 if __name__ == "__main__":
     import uvicorn
