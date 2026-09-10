@@ -8,9 +8,10 @@ from app.db.session import get_db
 from app.db.models import Doctor
 import json
 
-router = APIRouter(prefix="/whatsapp", tags=["whatsapp"])
+router = APIRouter(tags=["whatsapp"])
 
-@router.post("/")
+@router.post("/whatsapp", include_in_schema=False)
+@router.post("/whatsapp/")
 async def whatsapp_webhook(
     From: str = Form(...),
     Body: str = Form(...),
