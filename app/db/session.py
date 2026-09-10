@@ -6,11 +6,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Get database URL from .env
-SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:password@localhost:5432/hospital_db")
+# Get database URL from .env, fallback to SQLite for local development
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./hospital.db")
 
-# Create the SQLAlchemy engine
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
+# If using SQLite, add connect_args
+if DATABASE_URL.startswith("sqlite"):
+    engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+else:
+    engine = create_engine(DATABASE_URL)
 
 # Create a configured "Session" local class
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -25,3 +28,9 @@ def get_db():
         yield db
     finally:
         db.close()
+
+# Function to create all tables
+def create_tables():
+    """Create all database tables"""
+    from app.db.models import User, Doctor, Appointment, AppointmentHistory
+    Base.metadata.create_all(bind=engine)

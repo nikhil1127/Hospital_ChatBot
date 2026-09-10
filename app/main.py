@@ -4,10 +4,16 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 import os
 from app.api.webhook import router as webhook_router
-from app.db.session import get_db
+from app.db.session import get_db, create_tables
 from app.db.models import Appointment, User, Doctor, AppointmentHistory
 
 app = FastAPI(title="Multispeciality Hospital Bot")
+
+# Create database tables on startup
+@app.on_event("startup")
+async def startup_event():
+    create_tables()
+    print("✅ Database tables created/verified")
 
 # Include the webhook routes
 app.include_router(webhook_router)
