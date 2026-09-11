@@ -1,0 +1,77 @@
+Complete Hospital Management System Implementation
+
+Add all 31 requested features for comprehensive HIS:
+
+CORE MODULES:
+- Patient Master Index (EMPI) with unique PAT-YYYY-XXXXXX IDs
+- EMPI duplicate detection using fuzzy matching
+- Complete patient demographics and medical history
+- Role-based access control (RBAC) with audit logging
+- Patient timeline and EHR view
+
+OPD & APPOINTMENTS:
+- Appointment booking with token-based queue system
+- Doctor schedule management with slots
+- Web-based doctor dashboard
+- Consultation screen with vitals, diagnosis, prescriptions
+- Lab and radiology order integration
+
+IPD / ADMISSIONS:
+- Ward and bed management (General, Private, ICU)
+- Patient admission workflow
+- Daily progress notes for doctor rounds
+- Bed transfer capability
+- Discharge with summary generation
+
+NURSING MODULE:
+- Vitals recording (BP, pulse, temp, SpO2, etc.)
+- Shift handover notes
+- Medication administration tracking
+- Fluid intake/output chart
+
+EMERGENCY:
+- Triage categories (RED/YELLOW/GREEN/BLACK)
+- Priority queue management
+- Disposition tracking
+
+INSURANCE / TPA:
+- Insurance provider management
+- Policy management with coverage limits
+- Pre-authorization requests
+- Cashless and reimbursement claims
+- Coverage calculation
+
+PHARMACY:
+- Medicine catalog with inventory
+- Batch tracking with expiry dates
+- Drug interaction checking
+- Allergy alerts
+- Low stock alerts
+- Prescription dispensing
+
+BILLING:
+- Auto-generated OPD invoices
+- IPD daily bed charges
+- Insurance vs patient liability
+- Multiple payment methods
+- Receipt generation
+
+DOCUMENTS & ALERTS:
+- Document upload (PDF, scans, DICOM)
+- Organized by category and date
+- Clinical alerts for critical vitals
+- Drug interaction alerts
+
+WEB DASHBOARDS:
+- Doctor dashboard with patient queue
+- Admin dashboard with statistics
+- Patient timeline view
+- Real-time updates
+
+INTEGRATION:
+- WhatsApp bot preserved and enhanced
+- 49 API endpoints
+- Comprehensive test suite
+- Safe migration script for existing data
+
+Co-Authored-By: Claude Code <noreply@anthropic.com>

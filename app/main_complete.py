@@ -15,6 +15,13 @@ from app.api.webhook import router as webhook_router
 from app.api.complete_routes import router as api_router
 from app.core.complete_db_service import CompleteHospitalDBService
 
+from app.ui.ipd_dashboard import IPD_DASHBOARD_HTML
+from app.ui.pharmacy_dashboard import PHARMACY_DASHBOARD_HTML
+from app.ui.billing_dashboard import BILLING_DASHBOARD_HTML
+from app.ui.nursing_dashboard import NURSING_DASHBOARD_HTML
+from app.ui.emergency_dashboard import EMERGENCY_DASHBOARD_HTML
+from app.ui.patient_portal import PATIENT_PORTAL_HTML
+
 # Create all tables
 Base.metadata.create_all(bind=engine)
 
@@ -40,13 +47,22 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     print("=" * 60)
-    print("🏥 MEDCARE HOSPITAL MANAGEMENT SYSTEM")
+    print("🏥 MEDCARE HOSPITAL MANAGEMENT SYSTEM v3.0")
     print("=" * 60)
-    print("\n📱 WhatsApp Bot:        POST /whatsapp")
-    print("🩺 Doctor Dashboard:    GET  /doctor")
-    print("🏥 Admin Dashboard:     GET  /admin")
-    print("📋 API Documentation:   GET  /api/docs")
-    print("\n🔐 Available Modules:")
+    print("\n🌐 WEB DASHBOARDS:")
+    print("   • Main Portal:       http://localhost:8000/")
+    print("   • Doctor:            http://localhost:8000/doctor")
+    print("   • Admin:             http://localhost:8000/admin")
+    print("   • IPD:               http://localhost:8000/ipd")
+    print("   • Nursing:           http://localhost:8000/nursing")
+    print("   • Pharmacy:          http://localhost:8000/pharmacy")
+    print("   • Billing:           http://localhost:8000/billing")
+    print("   • Emergency:         http://localhost:8000/emergency")
+    print("   • Patient Portal:    http://localhost:8000/patient")
+    print("\n📱 INTEGRATIONS:")
+    print("   • WhatsApp Bot:      POST /whatsapp")
+    print("   • API Docs:          GET  /api/docs")
+    print("\n🔐 MODULES ENABLED:")
     print("   ✓ Patient Management (EMPI)")
     print("   ✓ OPD / Appointments")
     print("   ✓ EHR / Medical Records")
@@ -56,7 +72,7 @@ async def startup_event():
     print("   ✓ Billing / Invoicing")
     print("   ✓ Nursing / Vitals")
     print("   ✓ Emergency / Triage")
-    print("   ✓ Documents")
+    print("   ✓ Documents / Alerts")
     print("=" * 60)
 
 # Include routers
@@ -206,8 +222,23 @@ DOCTOR_DASHBOARD_HTML = """
     </style>
 </head>
 <body>
+    <!-- Global Navigation -->
+    <nav style="background: #1e293b; padding: 8px 30px; display: flex; justify-content: space-between; align-items: center;">
+        <a href="/" style="color: white; text-decoration: none; font-weight: 600; font-size: 1.1rem;">🏥 MedCare HMS</a>
+        <div style="display: flex; gap: 5px;">
+            <a href="/admin" style="color: #94a3b8; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem;">📊 Admin</a>
+            <a href="/doctor" style="color: white; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; background: #2563eb;">👨‍⚕️ Doctor</a>
+            <a href="/ipd" style="color: #94a3b8; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem;">🛏️ IPD</a>
+            <a href="/nursing" style="color: #94a3b8; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem;">👩‍⚕️ Nursing</a>
+            <a href="/pharmacy" style="color: #94a3b8; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem;">💊 Pharmacy</a>
+            <a href="/billing" style="color: #94a3b8; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem;">💰 Billing</a>
+            <a href="/emergency" style="color: #94a3b8; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem;">🚨 ER</a>
+            <a href="/patient" style="color: #94a3b8; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem;">🧑‍⚕️ Patient</a>
+            <a href="/" style="color: #94a3b8; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem;">🚪 Exit</a>
+        </div>
+    </nav>
     <header class="header">
-        <h1>👨‍⚕️ MedCare Hospital - Doctor Dashboard</h1>
+        <h1>👨‍⚕️ Doctor Dashboard</h1>
         <div>
             <div id="doctor-name" style="font-weight: 600;">Loading...</div>
             <div id="doctor-specialty" style="font-size: 0.9rem; opacity: 0.9;">Loading...</div>
@@ -581,7 +612,7 @@ ADMIN_DASHBOARD_HTML = """
         }
         .nav-item:hover { background: #f3f4f6; color: #2563eb; }
         .nav-item.active { background: #eff6ff; color: #2563eb; border-left-color: #2563eb; }
-        .main-content { margin-left: 260px; padding: 30px; }
+        .main-content { margin-left: 260px; margin-top: 48px; padding: 30px; }
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -628,7 +659,22 @@ ADMIN_DASHBOARD_HTML = """
     </style>
 </head>
 <body>
-    <div class="sidebar">
+    <!-- Global Navigation -->
+    <nav style="background: #1e293b; padding: 8px 30px; display: flex; justify-content: space-between; align-items: center; position: fixed; top: 0; left: 0; right: 0; z-index: 200;">
+        <a href="/" style="color: white; text-decoration: none; font-weight: 600; font-size: 1.1rem;">🏥 MedCare HMS</a>
+        <div style="display: flex; gap: 5px;">
+            <a href="/admin" style="color: white; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; background: #2563eb;">📊 Admin</a>
+            <a href="/doctor" style="color: #94a3b8; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem;">👨‍⚕️ Doctor</a>
+            <a href="/ipd" style="color: #94a3b8; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem;">🛏️ IPD</a>
+            <a href="/nursing" style="color: #94a3b8; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem;">👩‍⚕️ Nursing</a>
+            <a href="/pharmacy" style="color: #94a3b8; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem;">💊 Pharmacy</a>
+            <a href="/billing" style="color: #94a3b8; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem;">💰 Billing</a>
+            <a href="/emergency" style="color: #94a3b8; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem;">🚨 ER</a>
+            <a href="/patient" style="color: #94a3b8; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem;">🧑‍⚕️ Patient</a>
+            <a href="/" style="color: #94a3b8; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem;">🚪 Exit</a>
+        </div>
+    </nav>
+    <div class="sidebar" style="margin-top: 48px;">
         <div class="sidebar-header">
             <div class="logo">🏥</div>
             <h2>MedCare Hospital</h2>
@@ -636,12 +682,12 @@ ADMIN_DASHBOARD_HTML = """
         </div>
         <nav class="nav-menu">
             <a href="#" class="nav-item active" onclick="loadSection('dashboard')">📊 Dashboard</a>
-            <a href="#" class="nav-item" onclick="loadSection('ipd')">🏥 IPD</a>
-            <a href="#" class="nav-item" onclick="loadSection('billing')">💰 Billing</a>
-            <a href="#" class="nav-item" onclick="loadSection('pharmacy')">💊 Pharmacy</a>
+            <a href="/ipd" class="nav-item">🏥 IPD</a>
+            <a href="/billing" class="nav-item">💰 Billing</a>
+            <a href="/pharmacy" class="nav-item">💊 Pharmacy</a>
             <a href="#" class="nav-item" onclick="loadSection('lab')">🧪 Laboratory</a>
             <a href="#" class="nav-item" onclick="loadSection('insurance')">🛡️ Insurance</a>
-            <a href="#" class="nav-item" onclick="loadSection('emergency')">🚨 Emergency</a>
+            <a href="/emergency" class="nav-item">🚨 Emergency</a>
         </nav>
     </div>
 
@@ -727,10 +773,236 @@ async def admin_dashboard_page():
     """Serve admin dashboard"""
     return HTMLResponse(content=ADMIN_DASHBOARD_HTML)
 
+@app.get("/ipd")
+async def ipd_dashboard_page():
+    """Serve IPD/Bed Management dashboard"""
+    return HTMLResponse(content=IPD_DASHBOARD_HTML)
+
+@app.get("/pharmacy")
+async def pharmacy_dashboard_page():
+    """Serve Pharmacy dashboard"""
+    return HTMLResponse(content=PHARMACY_DASHBOARD_HTML)
+
+@app.get("/billing")
+async def billing_dashboard_page():
+    """Serve Billing & Insurance dashboard"""
+    return HTMLResponse(content=BILLING_DASHBOARD_HTML)
+
+@app.get("/nursing")
+async def nursing_dashboard_page():
+    """Serve Nursing Station dashboard"""
+    return HTMLResponse(content=NURSING_DASHBOARD_HTML)
+
+@app.get("/emergency")
+async def emergency_dashboard_page():
+    """Serve Emergency Department dashboard"""
+    return HTMLResponse(content=EMERGENCY_DASHBOARD_HTML)
+
+@app.get("/patient")
+async def patient_portal_page():
+    """Serve Patient Portal"""
+    return HTMLResponse(content=PATIENT_PORTAL_HTML)
+
+# Unified Login Page
+LOGIN_PAGE_HTML = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - MedCare Hospital</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .login-container {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            width: 100%;
+            max-width: 1000px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+        }
+        .login-left {
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+            color: white;
+            padding: 60px 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .logo { font-size: 4rem; margin-bottom: 20px; }
+        .login-left h1 { font-size: 2.5rem; margin-bottom: 20px; }
+        .login-left p { font-size: 1.1rem; opacity: 0.9; line-height: 1.6; }
+        .features {
+            margin-top: 30px;
+        }
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+        }
+        .feature-icon {
+            width: 32px;
+            height: 32px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-right {
+            padding: 60px 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .module-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .module-btn {
+            padding: 20px;
+            border: 2px solid #e5e7eb;
+            border-radius: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: white;
+            text-decoration: none;
+            color: #1f2937;
+        }
+        .module-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border-color: #2563eb;
+        }
+        .module-icon {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        .module-label {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        .module-desc {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 5px;
+        }
+        .login-footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #6b7280;
+            font-size: 0.85rem;
+        }
+        @media (max-width: 768px) {
+            .login-container { grid-template-columns: 1fr; }
+            .login-left { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-left">
+            <div class="logo">🏥</div>
+            <h1>MedCare Hospital</h1>
+            <p>Complete Hospital Management System with integrated modules for seamless patient care.</p>
+            <div class="features">
+                <div class="feature-item">
+                    <div class="feature-icon">👨‍⚕️</div>
+                    <span>Doctor Consultations & EHR</span>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🛏️</div>
+                    <span>IPD & Bed Management</span>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">💊</div>
+                    <span>Pharmacy & Inventory</span>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">💰</div>
+                    <span>Billing & Insurance</span>
+                </div>
+            </div>
+        </div>
+        <div class="login-right">
+            <h2 style="margin-bottom: 10px; color: #1f2937;">Select Portal</h2>
+            <p style="color: #6b7280; margin-bottom: 30px;">Choose your dashboard to continue</p>
+            <div class="module-grid">
+                <a href="/doctor" class="module-btn">
+                    <div class="module-icon">👨‍⚕️</div>
+                    <div class="module-label">Doctor</div>
+                    <div class="module-desc">OPD Queue & Consultations</div>
+                </a>
+                <a href="/ipd" class="module-btn">
+                    <div class="module-icon">🛏️</div>
+                    <div class="module-label">IPD</div>
+                    <div class="module-desc">Bed Management & Admissions</div>
+                </a>
+                <a href="/nursing" class="module-btn">
+                    <div class="module-icon">👩‍⚕️</div>
+                    <div class="module-label">Nursing</div>
+                    <div class="module-desc">Vitals & Medications</div>
+                </a>
+                <a href="/pharmacy" class="module-btn">
+                    <div class="module-icon">💊</div>
+                    <div class="module-label">Pharmacy</div>
+                    <div class="module-desc">Inventory & Dispensing</div>
+                </a>
+                <a href="/billing" class="module-btn">
+                    <div class="module-icon">💰</div>
+                    <div class="module-label">Billing</div>
+                    <div class="module-desc">Invoices & Insurance</div>
+                </a>
+                <a href="/emergency" class="module-btn">
+                    <div class="module-icon">🚨</div>
+                    <div class="module-label">Emergency</div>
+                    <div class="module-desc">Triage & ER Queue</div>
+                </a>
+                <a href="/admin" class="module-btn">
+                    <div class="module-icon">📊</div>
+                    <div class="module-label">Admin</div>
+                    <div class="module-desc">Hospital Overview</div>
+                </a>
+                <a href="/patient" class="module-btn">
+                    <div class="module-icon">🧑‍⚕️</div>
+                    <div class="module-label">Patient</div>
+                    <div class="module-desc">Portal & Records</div>
+                </a>
+            </div>
+            <div class="login-footer">
+                <p>🏥 MedCare Hospital Management System v3.0</p>
+                <p style="margin-top: 5px;">WhatsApp Bot: <code>/whatsapp</code> | API Docs: <code>/api/docs</code></p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+"""
+
 @app.get("/")
 async def root():
-    """Root endpoint - redirect to admin"""
-    return RedirectResponse(url="/admin")
+    """Root endpoint - unified login/portal selector"""
+    return HTMLResponse(content=LOGIN_PAGE_HTML)
+
+@app.get("/login")
+async def login_page():
+    """Dedicated login page"""
+    return HTMLResponse(content=LOGIN_PAGE_HTML)
 
 # ==================== HEALTH CHECK ====================
 
