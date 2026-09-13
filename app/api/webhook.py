@@ -3,10 +3,22 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 from app.core.ai import ai_service
 from app.core.session import session_manager
-from app.core.db_service import HospitalDBService
-from app.db.session import get_db
-from app.db.models import Doctor
 import json
+
+# DB session dependency
+from app.db.session import get_db
+
+# Conditional imports - use complete models if available
+try:
+    # Try complete system first
+    from app.core.complete_db_service import CompleteHospitalDBService as HospitalDBService
+    from app.db.models_complete import Doctor
+    USING_COMPLETE = True
+except ImportError:
+    # Fall back to original models
+    from app.core.db_service import HospitalDBService
+    from app.db.models import Doctor
+    USING_COMPLETE = False
 
 router = APIRouter(tags=["whatsapp"])
 
@@ -164,10 +176,13 @@ Our staff will assist you shortly!</Message>
 
         # Menu option 2: View Doctors
         elif any(word in message_lower for word in ["2", "view doctor", "specialties", "departments"]):
-            doctors = db_service.db.query(Doctor).filter(Doctor.is_available == True).all()
+            doctors = db_service.find_doctors_by_specialty(None)  # Get all available doctors
             text = "👨‍⚕️ *Our Doctors*\n\n"
             for doc in doctors[:5]:  # Show first 5
-                text += f"• *{doc.name}*\n  {doc.specialty}\n  Fee: ₹{doc.consultation_fee}\n\n"
+                doc_name = getattr(doc, 'name', doc.get('name', 'Unknown'))
+                doc_spec = getattr(doc, 'specialty', doc.get('specialty', 'General'))
+                doc_fee = getattr(doc, 'consultation_fee', doc.get('fee', 0))
+                text += f"• *{doc_name}*\n  {doc_spec}\n  Fee: ₹{doc_fee}\n\n"
             text += "_Reply with doctor name to book_"
 
             return f"""<?xml version="1.0" encoding="UTF-8"?>
